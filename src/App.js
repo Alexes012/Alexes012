@@ -1,48 +1,178 @@
 import React from 'react';
 import './App.css';
-import s from './styles.module.css';
+import Settings from "./components/SettingBlock/Settings";
+import Counter from "./components/CounterBlock/Counter";
 
-class counter extends React.Component {
+
+class App extends React.Component {
+
 
     state = {
-        startValue: 0,
-        maxValue: 5,
-        currentValue: 0
+        settingButtons: 'set',
+        counterButtons: ['inc', 'reset'],
+        areaItem: ['max value', 'start value'],
+        valueVisual: "enter values and press 'set'",
+        startValue: '',
+        maxValue: '',
+        inputClassGood: 'good',
+        inputClassBad: 'bad'
     };
 
 
-    click = () => {
-        if (this.state.currentValue < this.state.maxValue) {
-            this.setState({currentValue: this.state.currentValue + 1})
+    componentDidMount = () => {
+        this.restoreState()
+    };
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+
+
+        let maxValue = Number(this.state.maxValue);
+        let startValue = Number(this.state.startValue);
+
+
+        if ((this.state.valueVisual === "enter values and press 'set'") || (this.state.valueVisual === "Incorrect value")) {
+            if ((this.state.maxValue !== '') && (startValue >= maxValue) && ((prevState.startValue !== this.state.startValue) || (prevState.maxValue !== this.state.maxValue))) {
+                this.setState({
+                    valueVisual: "Incorrect value"
+                }, () => {
+                    this.saveState();
+                });
+            } else if (((startValue < 0) && (this.state.maxValue!=='')) && ((prevState.startValue !== this.state.startValue) || (prevState.maxValue !== this.state.maxValue))) {
+                this.setState({
+                    valueVisual: "Incorrect value"
+                }, () => {
+                    this.saveState();
+                });
+            } else if ((startValue < maxValue ) && ((prevState.startValue !== this.state.startValue) || (prevState.maxValue !== this.state.maxValue))) {
+                this.setState({
+                    valueVisual: "enter values and press 'set'"
+                }, () => {
+                    this.saveState();
+                });
+            }
+
+        }
+
+    };
+
+
+    saveState = () => {
+
+        let stateAsString = JSON.stringify(this.state);
+        localStorage.setItem("state", stateAsString);
+    };
+
+    restoreState = () => {
+
+        let stateAsString = localStorage.getItem("state");
+
+        let state = JSON.parse(stateAsString);
+
+        this.setState(state);
+
+    };
+
+
+    counterReset = () => {
+
+        let newValue = this.state.startValue;
+
+        this.setState({
+            valueVisual: newValue
+        }, () => {
+            this.saveState();
+        });
+    };
+
+
+    counterInc = () => {
+        let newValue = ++this.state.valueVisual;
+        if (Number(this.state.valueVisual) >= Number(this.state.startValue) && Number(this.state.valueVisual) <= Number(this.state.maxValue)) {
+            this.setState({
+                valueVisual: newValue
+            }, () => {
+                this.saveState();
+            });
+        } else {
+            return false;
+        }
+
+    };
+
+    setStart = () => {
+        if ((Number(this.state.startValue) >= 0 && (Number(this.state.startValue) < Number(this.state.maxValue))) && (this.state.valueVisual === "enter values and press 'set'") ) {
+            this.setState({
+                valueVisual: this.state.startValue
+            }, () => {
+                this.saveState();
+            })
         }
     };
 
-    resest = () => {
-        if (this.state.currentValue) {
-            this.setState({currentValue: this.state.startValue})
+    setStartValue = (e) => {
+
+        let newStartValue = e.currentTarget.value;
+        this.setState({
+            startValue: newStartValue
+        }, () => {
+            this.saveState();
+        })
+
+    };
+
+
+    setMaxValue = (e) => {
+        let newMaxValue = e.currentTarget.value;
+        this.setState({
+            maxValue: newMaxValue
+        }, () => {
+            this.saveState();
+        })
+    };
+
+
+    onFocusActive = () => {
+
+        if ((Number(this.state.startValue) >= 0) && (Number(this.state.startValue) < Number(this.state.maxValue)) || this.state.startValue === '' || this.state.maxValue === '') {
+            this.setState({
+                valueVisual: "enter values and press 'set'"
+            }, () => {
+                this.saveState();
+            })
+        } else {
+            this.setState({
+                valueVisual: "Incorrect value"
+            }, () => {
+                this.saveState();
+            })
         }
     };
 
 
     render = () => {
 
-        let disabled = this.state.currentValue === this.state.maxValue ? true:false;
-        let changecolor = this.state.currentValue === this.state.maxValue ? s.color : '';
+
+        let inputClass = () => {
+            if ((Number(this.state.startValue) >= 0) && (Number(this.state.startValue) < Number(this.state.maxValue)) || ((this.state.startValue === '')  || (this.state.maxValue === '' && (Number(this.state.startValue)>=0)))) {
+                return this.state.inputClassGood;
+            } else {
+                return this.state.inputClassBad;
+            }
+        };
 
         return (
-            <div className={s.container}>
-                <div className={s.block}>
-                    <div className={s.span}>
-                        <div className={changecolor}>{this.state.currentValue}</div>
-                    </div>
-                    <div>
-                        <button onClick={this.click} disabled={disabled}>CLICK</button>
-                        <button onClick={this.resest}>RESET</button>
-                    </div>
-                </div>
+            <div className="App">
+                <Settings setStartValue={this.setStartValue} setMaxValue={this.setMaxValue} setStart={this.setStart}
+                          startValue={this.state.startValue} maxValue={this.state.maxValue}
+                          settingButtons={this.state.settingButtons} areaItem={this.state.areaItem}
+                          onFocusActive={this.onFocusActive}
+                          inputClass={inputClass} valueVisual={this.state.valueVisual}/>
+                <Counter counterInc={this.counterInc} counterReset={this.counterReset}
+                         counterButtons={this.state.counterButtons} valueVisual={this.state.valueVisual}
+                         startValue={this.state.startValue} maxValue={this.state.maxValue}/>
             </div>
         )
     }
 }
 
-export default counter;
+export default App;
